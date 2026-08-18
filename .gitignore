@@ -1,0 +1,15 @@
+# Build artifacts
+demos/out/
+examples/simple_test
+examples/custom_class_test
+examples/foundation_test
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+__pycache__/
+*.pyc
+
+# PR replies and other scratch drafts stay local
+drafts/

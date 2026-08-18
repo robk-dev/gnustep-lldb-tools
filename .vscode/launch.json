@@ -1,0 +1,65 @@
+{
+    // Debug configurations for the GNUstep LLDB plugin, on Linux/WSL and
+    // Windows.
+    //
+    // Requires the "LLDB DAP" extension (llvm-vs-code-extensions.lldb-dap).
+    // The adapter binary comes from the sibling llvm-project build via
+    // debugAdapterExecutable, so no user settings are needed. On Windows the
+    // adapter needs python312.dll on PATH (the winget python.org install puts
+    // it there), and the demo needs the GNUstep DLLs on PATH; on Linux the
+    // demos are linked with an rpath, so no environment is needed.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "foundation types demo (data formatters)",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${workspaceFolder}/demos/out/foundation_types_demo",
+            "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap",
+            "cwd": "${workspaceFolder}/demos",
+            "stopOnEntry": false,
+            "preLaunchTask": "build foundation types demo",
+            "windows": {
+                "program": "${workspaceFolder}/demos/out/foundation_types_demo.exe",
+                "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap.exe",
+                "env": {
+                    "PATH": "${workspaceFolder}/../gnustep-msvc/x64/Release/bin;${env:PATH}"
+                }
+            }
+        },
+        {
+            "name": "foundation demo (gnustep-base)",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${workspaceFolder}/demos/out/foundation_demo",
+            "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap",
+            "cwd": "${workspaceFolder}/demos",
+            "stopOnEntry": false,
+            "preLaunchTask": "build foundation demo",
+            "windows": {
+                "program": "${workspaceFolder}/demos/out/foundation_demo.exe",
+                "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap.exe",
+                "env": {
+                    "PATH": "${workspaceFolder}/../gnustep-msvc/x64/Release/bin;${env:PATH}"
+                }
+            }
+        },
+        {
+            "name": "runtime demo (bare libobjc2)",
+            "type": "lldb-dap",
+            "request": "launch",
+            "program": "${workspaceFolder}/demos/out/runtime_demo",
+            "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap",
+            "cwd": "${workspaceFolder}/demos",
+            "stopOnEntry": false,
+            "preLaunchTask": "build runtime demo",
+            "windows": {
+                "program": "${workspaceFolder}/demos/out/runtime_demo.exe",
+                "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap.exe",
+                "env": {
+                    "PATH": "${workspaceFolder}/../gnustep-prefix/lib;${env:PATH}"
+                }
+            }
+        }
+    ]
+}

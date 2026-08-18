@@ -1,0 +1,86 @@
+{
+    // Pre-launch builds for the demos in launch.json. Windows uses the
+    // PowerShell scripts in demos/, Linux the Makefile next to them.
+    //
+    // On Linux the Makefile takes CC and PREFIX; the defaults (`clang` on
+    // PATH, /usr/local) match what gnustep-build/helpers/gnustep_operations.sh
+    // installs. Point CC at the freshly built compiler if you would rather
+    // not rely on a system clang, e.g.
+    //   make -C demos CC=../llvm-project/build/bin/clang
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build foundation types demo",
+            "type": "shell",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}/demos/build-foundation.ps1",
+                    "-Source",
+                    "${workspaceFolder}/demos/foundation_types_demo.m",
+                    "-Name",
+                    "foundation_types_demo"
+                ]
+            },
+            "linux": {
+                "command": "make",
+                "args": [
+                    "-C",
+                    "${workspaceFolder}/demos",
+                    "out/foundation_types_demo"
+                ]
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build foundation demo",
+            "type": "shell",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}/demos/build-foundation.ps1"
+                ]
+            },
+            "linux": {
+                "command": "make",
+                "args": [
+                    "-C",
+                    "${workspaceFolder}/demos",
+                    "out/foundation_demo"
+                ]
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build runtime demo",
+            "type": "shell",
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}/demos/build.ps1"
+                ]
+            },
+            "linux": {
+                "command": "make",
+                "args": [
+                    "-C",
+                    "${workspaceFolder}/demos",
+                    "out/runtime_demo"
+                ]
+            },
+            "problemMatcher": []
+        }
+    ]
+}

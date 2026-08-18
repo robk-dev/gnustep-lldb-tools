@@ -1,0 +1,44 @@
+Correct cross.config seeds for x86_64 Windows MSVC with libobjc2.
+
+Smart App Control (or any policy that blocks freshly built unsigned
+binaries) prevents configure's AC_TRY_RUN conftests from executing
+reliably, so the build forces cross-compiling mode and reads these
+seeds. The shipped defaults answer "no" for capabilities this target
+actually has: libobjc2 supports constant string classes, +load and a
+thread-safe +initialize (without HAVE_INITIALIZE gnustep-base warns
+"does not have a thread-safe implementation of the +initialize method"
+whenever a program goes multi-threaded), the gnustep-2.x ABI is the
+non-fragile v2 runtime, and the toolchain ships libiconv (-liconv).
+constant-string-class=no is a hard configure error.
+
+--- a/cross.config
++++ b/cross.config
+@@ -3,22 +3,22 @@
+ cross_utf8literal_ok=no
+ cross_reuseaddr_ok=0
+ cross_gs_cv_objc_works=yes
+-cross_gs_cv_objc_compiler_supports_constant_string_class=no
+-cross_gs_cv_objc_load_method_worked=no
++cross_gs_cv_objc_compiler_supports_constant_string_class=yes
++cross_gs_cv_objc_load_method_worked=yes
+ cross_have_poll=no
+ cross_VSPRINTF_RETURNS_LENGTH=1
+ cross_VASPRINTF_RETURNS_LENGTH=1
+ cross_NEED_WORD_ALIGNMENT=1
+ cross_working_register_printf=1
+ cross_wide_register_printf=1
+ cross_gs_cv_program_invocation_name_worked=no
+ cross_CMDLINE_TERMINATED=0
+ cross_have_kvm_env=0
+ cross_ffi_ok=yes
+-cross_non_fragile=no
++cross_non_fragile=yes
+ cross_have_unexpected=no
+-cross_safe_initialize=no
++cross_safe_initialize=yes
+ cross_found_iconv_libc=no
+-cross_found_iconv_liconv=no
++cross_found_iconv_liconv=yes
+ cross_found_iconv_lgiconv=no
+-cross_objc2_runtime=0
++cross_objc2_runtime=1
