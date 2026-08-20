@@ -59,8 +59,10 @@ Opens only once wave 1 has landed.
 | Type encoding parser | Hermetic; takes a `Triple`, needs no target state. 51 cases across three data models. |
 | Ivars from runtime metadata | `GetNumIVars`/`GetIVarAtIndex` plus the `GetTypeBitSize` override — these must ship together or a wrong-`sizeof` regression lands in tree. |
 | Ivar offsets from the runtime | Overrides `GetByteOffsetForIvar`. Small, self-contained, and fixes wrong values for any over-aligned ivar and everything after it. Depends on the PR above. |
-| `DeclVendor` | Interfaces and methods synthesized from runtime metadata. The largest and closest port of Apple code. |
+| `DeclVendor` | Interfaces and methods synthesized from runtime metadata. The largest and closest port of Apple code. Now also carries the dynamic-value fallback: without it a class with no debug info resolves to a name but displays as `id`, which is what made a runtime-created class look unsupported. |
 | Exception breakpoints and exception objects | Including the catch entry point (both `objc_begin_catch` and `__cxa_begin_catch`) and the load-order re-resolve. |
+| Exception backtrace | `GetBacktraceThreadFromException`, reading the `GSStackTrace` gnustep-base fills in `-[NSException raise]`. Self-contained; depends on the ivar-metadata PR. Needs gnustep-base, so its test is API-only. |
+| Ivar offset symbols | `LookupRuntimeSymbol`, for when the inferior exports no `__objc_ivar_offset_*` symbol (stripped module, hidden-visibility ivar, `class_addIvar`). Carries the descriptor change that keeps the offset *address* libobjc2 gives us, which nothing needed until now. |
 
 ## Wave 3 — cross-targeting the test suites
 
@@ -74,6 +76,40 @@ Two things to flag explicitly in those descriptions: the commit that re-derives
 **changes what those features mean** for any out-of-tree test in a
 cross-configured build; and the API-suite half touches `Makefile.rules`, shared
 by the entire suite.
+
+## Two formatting windows to close when the PRs are cut
+
+`clang-format` is clean at the branch tip, but LLVM's `code_formatter` job runs
+on a PR's **cumulative diff** versus the merge base — so a PR that ends inside
+one of these windows fails it:
+
+| Window | Closed by |
+|---|---|
+| commits 1–10 (through *Add unit tests for class structure parsing*) | 11, *Formatting and include cleanup* |
+| commits 30–36 (through *Synthesize interfaces from runtime metadata*) | 37, *Vend methods from runtime metadata* |
+
+Any PR whose last commit falls in a window is dirty; any PR that includes the
+closing commit is clean. Two ways to fix, decide when the grouping is final:
+group each window's commits into PRs that carry their closing commit, or
+distribute the formatting into the commits that introduce the code.
+
+**Distributing it is not a mechanical rebase** — it was attempted and abandoned.
+Running `git clang-format` at commit 1 reformats regions that commit 9
+(*Harden runtime for all libobjc2 configurations*) later rewrites wholesale, so
+the replay conflicts semantically rather than textually. If you do it, resolve
+by taking the later commit's content and re-running the formatter there.
+
+Reproduce the sweep by checking out each commit in a worktree and running
+`git clang-format --diff upstream/main -- lldb/source lldb/include lldb/unittests`
+— note **`upstream/main`**, not `HEAD~1`: per-commit is the wrong measure and
+reports six scattered commits instead of these two windows.
+
+## A commit must build clean on its own
+
+Premerge builds every PR with `-Werror`, and the sweep below only checks the
+branch tip — so a constant introduced by commit N and first used by commit N+2
+fails CI for the two PRs in between while the tip stays green. Check the commits
+a PR actually contains, not just the final tree.
 
 ## Before opening anything
 
@@ -107,7 +143,14 @@ ninja -C ../llvm-project/build lldb lldb-test-depends \
 ../llvm-project/build/bin/llvm-lit --filter=objc-gnustep \
       ../llvm-project/build/tools/lldb/test/{Shell,API}
 bash gnustep-build/config_matrix.sh
+bash gnustep-build/werror_sweep.sh
 ```
+
+The `-Werror` sweep is not optional. The local build is configured
+`LLVM_ENABLE_WERROR=OFF` while premerge builds with it **on**, so a warning that
+fails CI compiles silently here — which is exactly how a `-Wformat` mismatch and
+a `-Wshift-negative-value` reached the umbrella PR. The sweep is syntax-only over
+just the files the branch touches, so it costs seconds.
 
 Rebuild `lldb` itself, not just the unit-test target — a stale `liblldb.so` has
 produced a convincing false failure more than once. And when a validation script

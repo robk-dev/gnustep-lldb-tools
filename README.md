@@ -11,6 +11,9 @@ covers dynamic types, tagged pointers, `po`, stepping through message
 dispatch, expression evaluation, and data formatters for the gnustep-base
 Foundation classes.
 
+**Start with [HANDOVER.md](HANDOVER.md)** — branch state, verified test numbers,
+what remains, and the working rules that are easy to get wrong.
+
 ## Repository layout
 
 | Path | Purpose |

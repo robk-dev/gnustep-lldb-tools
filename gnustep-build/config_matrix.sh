@@ -61,7 +61,7 @@ else
 fi
 
 echo "== Row 4: statically linked libobjc2 =="
-skip "libobjc2's own objc-static target omits arc.m; static links fail upstream"
+skip "libobjc2's own objc-static target omits arc.mm; static links fail upstream"
 
 echo "== Row 5: renamed libobjc2 (LIBOBJC_NAME) =="
 if [ ! -f "$WORK/renamed-build/libobjc2.so" ]; then
@@ -157,10 +157,13 @@ $CLANG -m64 -g -O0 -fobjc-runtime=gnustep-2.1 -I "$GNUSTEP_PREFIX/include" \
     -L"$GNUSTEP_PREFIX/lib" -Wl,-rpath,"$GNUSTEP_PREFIX/lib" -lobjc 2>/dev/null
 out=$(timeout 120 "$LLDB" -b -o "b runtime_class.m:17" -o run \
     -o "frame variable -d run-target runtime_obj known_obj" "$WORK/rc.bin" 2>&1)
-# A class with no debug info has no type to attach, so the variable keeps its
-# static type - what matters is that nothing is invented and nothing crashes.
-if grep -q "(id) runtime_obj" <<<"$out" && grep -q "(Known \*) known_obj" <<<"$out"; then
-    pass "runtime-created class handled safely"
+# The class was registered at run time, so it has neither a class symbol nor
+# debug info; its name and layout come from the runtime's metadata alone, via
+# the interface the DeclVendor synthesizes. It must resolve just like the
+# compiled class beside it.
+if grep -q "(MadeAtRuntime \*) runtime_obj" <<<"$out" &&
+   grep -q "(Known \*) known_obj" <<<"$out"; then
+    pass "runtime-created class resolves to its own type"
 else
     fail "runtime-created class"
 fi
