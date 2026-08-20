@@ -48,7 +48,7 @@ mkdir -p "$WORK/striplib" && cp -P "$GNUSTEP_PREFIX"/lib/libobjc.so* "$WORK/stri
 $CLANG -m64 -g -O0 -fobjc-runtime=gnustep-2.1 -I "$GNUSTEP_PREFIX/include" \
     "$SHELL_TESTS/objc-gnustep-tagged-pointers.m" -o "$WORK/strip.bin" \
     -L"$WORK/striplib" -Wl,-rpath,"$WORK/striplib" -lobjc 2>/dev/null
-out=$(timeout 120 "$LLDB" -b -o "b objc-gnustep-tagged-pointers.m:50" -o run \
+out=$(timeout 120 "$LLDB" -b -o "b objc-gnustep-tagged-pointers.m:49" -o run \
     -o "frame variable -d run-target tagged" \
     -o "frame variable -d run-target ordinary" "$WORK/strip.bin" 2>&1)
 # The small object class table cannot be found without symbols, so a tagged

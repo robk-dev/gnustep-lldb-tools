@@ -1,97 +1,114 @@
 # Upstreaming plan
 
-Source branch: `gnustep/integration` — 24 commits on upstream `main`.
+Source branch: `gnustep/integration`, rebased on `upstream/main`.
 
-**Open PRs**
+**Landed**
 
-- [#216709](https://github.com/llvm/llvm-project/pull/216709) — overview, draft, not for merge
-- [#216710](https://github.com/llvm/llvm-project/pull/216710) — MinGW CRT guard
-- [#216711](https://github.com/llvm/llvm-project/pull/216711) — MS inheritance model on non-CXXRecordDecl DWARF types
+- [#216710](https://github.com/llvm/llvm-project/pull/216710) — Guard CRT debug
+  report calls with `_MSC_VER`. Merged as `85413b1277e2`.
 
-The remaining eight are prepared but unsent; open each as its predecessor
-lands, so only two or three are in flight at once.
+**Open**
 
-Each PR below is cut by cherry-picking its commits onto a fresh branch off
-`upstream/main`. LLVM squash-merges, so a PR holding several commits still
-lands as one upstream commit; the PR title and description become that
-commit's message. Later PRs are rebased onto `main` once their predecessor
-lands.
+- [#216709](https://github.com/llvm/llvm-project/pull/216709) — overview, draft,
+  not for merge.
+- [#216711](https://github.com/llvm/llvm-project/pull/216711) — MS inheritance
+  model on non-`CXXRecordDecl` DWARF types. Approved.
+
+Each PR is cut by cherry-picking its commits onto a fresh branch off
+`upstream/main`. LLVM squash-merges, so a PR holding several commits still lands
+as one upstream commit, and **the PR description becomes that commit message** —
+including its `Assisted-by:` trailer, which the commits' own trailers do not
+survive to provide.
 
 ## Independent fixes — no GNUstep knowledge needed to review
 
-These touch no GNUstep code and can go first, in any order. They are also the
-cheapest way to start a review relationship before the larger PRs land.
+Cheapest way to keep a review relationship going, and each is a real bug on its
+own. Send these first, in any order.
 
-| PR | Commits | What it fixes |
-|---|---|---|
-| **1. MinGW CRT guard** (#216710) | 1 | `_CrtSetReportMode` is MSVC-only, so the crash-dialog path did not compile under MinGW. 3 lines. |
-| **2. DWARF ObjC type completion on MSVC targets** (#216711) | 16, 25 | Objective-C interfaces reach the Microsoft-C++-ABI inheritance-model code, which assumes a `CXXRecordDecl`; every ObjC type completion from DWARF on an MSVC target crashed LLDB. Nothing to do with GNUstep. Commit 25 is the Shell test (cross-compiles to `x86_64-pc-windows-msvc`, links with `lld-link`, checks the AST via `lldb-test -dump-clang-ast`). |
+| PR | What it fixes |
+|---|---|
+| **MS inheritance model** (#216711) | Objective-C interfaces reach the Microsoft-C++-ABI inheritance-model code, which assumes a `CXXRecordDecl`; every ObjC type completion from DWARF on an MSVC target crashed LLDB. |
+| **Frame recognizer with no module** | `frame recognizer list` dereferences a null `ConstString`. Reachable only through the API today, which is why it survived. Self-contained gtest. |
+| **GNUstep build flags applied to every `%build`** | The Shell build helper keyed the libobjc2 include and library paths off `--objc-gnustep-dir`, which lit passes to *every* `%build` on a GNUstep-configured build. Contained only because `--compiler=any` preferred `clang-cl` on Windows. Fixes upstream code, not ours. |
+| **`%msvc_link` without an MSVC requirement** | The one test using that substitution asked only for `target-windows`; run from a non-vcvars shell it executes the literal string and the shell returns 127. |
+| **`--no-debug-info` for the Shell build helper** | Needed to test anything that must work from a source other than debug info. |
 
-## The GNUstep series
+## Wave 1 — the plugin, foundation upward
 
-Ordered so each PR is reviewable on its own and depends only on its
-predecessors. Reviewers to tag: **theraven** (libobjc2 ABI), **DavidSpickett**
-and **labath** (Linux, test suite), **Michael137** and **jimingham**
-(expressions, formatters), **jdevlieghere** (overall).
+Reviewers to tag: **theraven** (libobjc2 ABI), **DavidSpickett** and **labath**
+(Linux, test suite), **Michael137** and **jimingham** (expressions, formatters,
+thread plans), **jdevlieghere** (overall).
 
-| PR | Commits | Contents |
-|---|---|---|
-| **3. Class descriptors and dynamic types** | 2, 7, 8, 19 | Parse `struct objc_class` from inferior memory, seed the ISA map from `._OBJC_CLASS_` symbols, resolve dynamic types and attach a type from debug info. Includes not giving class objects a dynamic type, which is a correctness fix for the same code. |
-| **4. Unit tests for the class parsing** | 11 | Hermetic gtests over three data models. Could be folded into PR 3 if a reviewer prefers tests alongside the code — worth offering. |
-| **5. Object description (`po`)** | 3 | Calls gnustep-base's `_NSPrintForDebugger`, the same hook AppleObjCRuntime uses. |
-| **6. Step-through for dispatch trampolines** | 4, 9, 24 | Resolves the implementation via `objc_msg_lookup` from a nested plan, entry points identified by name. |
-| **7. Expression evaluation** | 5, 6 | Registers the JIT'd module's selectors with the runtime through an IR pass. Expect the closest review; Michael137/jimingham. |
-| **8. Robustness across libobjc2 configurations** | 10, 12, 17, 21 | Data-model-correct field offsets, COFF symbol and section names, `__objc_load`-based runtime detection (covers static and renamed builds, and PE import thunks), cache invalidation, the tagged-pointer table via debug info. |
-| **9. API test suite support** | 13, 14, 15, 18 | `--objc-gnustep-dir` plumbing, the `objc-gnustep` category, the tests that use it, docs. Touches shared test infrastructure, so keep it standalone and strictly additive. labath/jdevlieghere. |
-| **10. Data formatters** | 20, 22, 23 | Summary providers and synthetic children for the gnustep-base Foundation classes. Largest and most subjective; land last. |
+| PR | Contents |
+|---|---|
+| Class descriptors, ISA map, dynamic types | Parse `struct objc_class` from inferior memory, seed the ISA map from class symbols, resolve dynamic types. Includes not giving class objects a dynamic type. |
+| Unit tests for the class parsing | Hermetic gtests over three data models. Offer to fold into the PR above if a reviewer prefers tests alongside code. |
+| Object description (`po`) | Built from libobjc2's `OBJC_PUBLIC` primitives, so it works against a bare runtime. Does **not** depend on gnustep-base exporting `_NSPrintForDebugger`. |
+| Step-through for dispatch trampolines | Resolves the implementation via `objc_msg_lookup`; steps out of a nil send rather than stranding the user in dispatch assembly. |
+| Expression evaluation | Registers the JIT'd module's selectors through an IR pass. Expect the closest review. |
+| Robustness across libobjc2 configurations | Data-model-correct field offsets, COFF symbol and section names, `__objc_load`-based detection, cache invalidation. |
+| API test suite support | `--objc-gnustep-dir` plumbing, the category, the tests, docs. Shared test infrastructure — keep standalone and strictly additive. |
+| Data formatters | Summary providers and synthetic children for gnustep-base, including the string flags fallback for classes with no debug info. |
 
-## AI tool policy
+## Wave 2 — runtime introspection
 
-LLVM's [AI tool policy](https://llvm.org/docs/AIToolPolicy.html) asks that
-contributions containing substantial tool-generated content be labelled, and
-suggests a commit trailer. Every commit on this branch carries:
+Opens only once wave 1 has landed.
 
-```
-Assisted-by: Claude Opus 5
-```
+| PR | Contents |
+|---|---|
+| Type encoding parser | Hermetic; takes a `Triple`, needs no target state. 51 cases across three data models. |
+| Ivars from runtime metadata | `GetNumIVars`/`GetIVarAtIndex` plus the `GetTypeBitSize` override — these must ship together or a wrong-`sizeof` regression lands in tree. |
+| Ivar offsets from the runtime | Overrides `GetByteOffsetForIvar`. Small, self-contained, and fixes wrong values for any over-aligned ivar and everything after it. Depends on the PR above. |
+| `DeclVendor` | Interfaces and methods synthesized from runtime metadata. The largest and closest port of Apple code. |
+| Exception breakpoints and exception objects | Including the catch entry point (both `objc_begin_catch` and `__cxa_begin_catch`) and the load-order re-resolve. |
 
-(or `Claude Fable 5`, matching whichever model produced it). Upstream practice
-uses the same trailer with values like `Claude`, `Claude Code` and
-`Cursor / claude-opus-5`. Use `Assisted-by:`, not `Co-Authored-By:` — the
-latter asserts authorship, which sits badly with the requirement that the
-contributor holds the right to contribute the code under LLVM's licence.
+## Wave 3 — cross-targeting the test suites
 
-Two further obligations fall on the human contributor, not the tool:
+Most invasive; sent last. Hoists `LLDB_TEST_TRIPLE` and `LLDB_TEST_SYSROOT` out
+of `lldb/test/API/CMakeLists.txt` so the Shell suite can build inferiors for a
+different target, adds two lit substitutions, and restructures the build
+helper's compile/link flag logic.
 
-- **"Contributors must read and review all LLM-generated code or text before
-  they ask other project members to review it"**, and must "be able to answer
-  questions about their work during review". This is the binding constraint on
-  how fast the remaining PRs should go out.
-- PR descriptions should be the contributor's own words; drafts here are
-  starting points to edit, not text to paste unread.
-
-The policy also bans agents that act without human approval, and forbids using
-AI tools on issues labelled `good first issue`. Neither applies here: every
-push and PR in this series was made under direct human instruction.
+Two things to flag explicitly in those descriptions: the commit that re-derives
+`target-windows` / `windows-msvc` / `windows-gnu` from the inferior's triple
+**changes what those features mean** for any out-of-tree test in a
+cross-configured build; and the API-suite half touches `Makefile.rules`, shared
+by the entire suite.
 
 ## Before opening anything
 
-- Post the RFC on Discourse (LLDB category) and let it sit for a few days.
-  Draft is in the git history of this repo; it needs updating with the
-  validated configuration matrix, the Windows results, and the fact that
-  premerge will report the Shell and API tests as unsupported while the unit
-  tests carry CI.
-- Each PR description states plainly: what runs in premerge (the unit tests),
-  what is skipped without a GNUstep runtime, and which configurations were
-  validated on Linux and Windows.
+- Post the RFC on Discourse (LLDB category) and let it sit. Draft in
+  `drafts/rfc-discourse.md`.
+- Each PR description states what premerge runs (the unit tests) versus what is
+  unsupported there, and which configurations were validated.
 - `git clang-format` against `upstream/main` for every PR.
-- Open two or three at a time at most.
+- Two or three in flight at most.
+
+## AI tool policy
+
+Every commit carries `Assisted-by: Claude Opus 5` — lowercase `b`, model name
+only, no address. Never `Co-Authored-By:`, which asserts authorship and conflicts
+with the contributor holding the right to license the code.
+
+**The trailer must also appear in the PR description**, because squash-merge
+composes the commit message from the description and discards the commits' own
+trailers. #216711 nearly landed unlabelled for exactly this reason.
+
+The policy's binding constraints fall on the contributor, not the tool: read and
+review everything before asking for review, be able to answer questions about it,
+and write the PR descriptions yourself. That is what paces this series.
 
 ## Verification before each PR
 
 ```bash
-ninja -C ../llvm-project/build lldb lldb-server clang
-../llvm-project/build/bin/llvm-lit -v --filter=objc-gnustep \
-    ../llvm-project/build/tools/lldb/test/{Shell,API}
+ninja -C ../llvm-project/build lldb lldb-test-depends \
+      LanguageRuntimeObjCGNUstepTests LanguageObjCTests TargetTests
+../llvm-project/build/bin/llvm-lit ../llvm-project/build/tools/lldb/test/Shell
+../llvm-project/build/bin/llvm-lit --filter=objc-gnustep \
+      ../llvm-project/build/tools/lldb/test/{Shell,API}
 bash gnustep-build/config_matrix.sh
 ```
+
+Rebuild `lldb` itself, not just the unit-test target — a stale `liblldb.so` has
+produced a convincing false failure more than once. And when a validation script
+reports a product failure, check the harness first.
