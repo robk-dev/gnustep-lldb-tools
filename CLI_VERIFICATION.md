@@ -1,5 +1,12 @@
 # Verifying the GNUstep LLDB support from the command line
 
+Historical demo notes: some descriptions below predate the current runtime-based
+`po` implementation and later formatter work. For freshly verified commands,
+expected output, and CLI/DAP/MCP coverage at the current integration revision,
+start with [the scripted lesson tooling](lessons/README.md). The current `po`
+path invokes `description` and `UTF8String` through libobjc2 primitives; it does
+not depend on `_NSPrintForDebugger` being exported by Foundation.
+
 Everything the VS Code launch configs do can be driven from `lldb.exe`
 directly. This is the quickest way to check a build, and the commands below
 are the ones the tests and demos assert on.

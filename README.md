@@ -202,3 +202,30 @@ the demo's own `-[Account description]`.
 
 If a demo builds but will not launch, check that `lldb-dap` exists in the
 sibling build (`ninja -C ../llvm-project/build lldb-dap`).
+
+## Scripted debugger lesson and maintainer labs
+
+The [lesson tooling guide](lessons/README.md) adds a small teaching example,
+CLI/DAP/MCP integration checks, and source-level walkthroughs inside Clang,
+LLDB, libobjc2 and gnustep-base. The generated workspace leaves the existing
+demo configurations intact.
+
+From this repository root on Windows, with the stack above installed:
+
+```powershell
+python lessons/lab.py setup
+python lessons/test_workflows.py
+python lessons/deep_labs.py
+code lessons/out/lesson.code-workspace
+```
+
+On Linux/WSL, use `python3` and pass the native LLVM build and GNUstep prefixes
+as shown in the guide. The [Gorm application lab](lessons/gorm.md) supplies a
+pinned clone/build/debug workflow and a copyable launch configuration; its
+fresh platform validation is explicitly tracked. [CI notes](lessons/ci.md)
+describe the opt-in runner and proposed LLVM buildbot integration.
+
+Editable narration, slides, diagrams and recording directions live in the
+sibling `lldb-video-lesson` directory. Agent clients can use the generated
+`lessons/out/mcp.json` with this build's `lldb-mcp`; no global client settings
+are modified by setup.

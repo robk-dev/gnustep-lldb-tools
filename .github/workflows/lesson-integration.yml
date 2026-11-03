@@ -1,0 +1,47 @@
+name: GNUstep LLDB lesson integration
+on:
+  workflow_dispatch:
+    inputs:
+      llvm_revision:
+        description: Exact 40-character revision of the provisioned LLVM checkout
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [Linux, Windows]
+    runs-on: [self-hosted, "${{ matrix.platform }}", gnustep-lldb]
+    timeout-minutes: 90
+    env:
+      PROJECT_ROOT: ${{ matrix.platform == 'Linux' && vars.LESSON_LLVM_ROOT_LINUX || vars.LESSON_LLVM_ROOT_WINDOWS }}
+      LLVM_BUILD_DIR: ${{ matrix.platform == 'Linux' && vars.LESSON_LLVM_BUILD_LINUX || vars.LESSON_LLVM_BUILD_WINDOWS }}
+      GNUSTEP_INSTALL_DIR: ${{ matrix.platform == 'Linux' && vars.LESSON_OBJC_PREFIX_LINUX || vars.LESSON_OBJC_PREFIX_WINDOWS }}
+      GNUSTEP_BASE_DIR: ${{ matrix.platform == 'Linux' && vars.LESSON_BASE_PREFIX_LINUX || vars.LESSON_BASE_PREFIX_WINDOWS }}
+      EXPECTED_LLVM_REVISION: ${{ inputs.llvm_revision }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify runner configuration and build selected targets
+        shell: python
+        run: |
+          import os, subprocess
+          for key in ['PROJECT_ROOT','LLVM_BUILD_DIR','GNUSTEP_INSTALL_DIR','GNUSTEP_BASE_DIR']:
+              if not os.environ.get(key): raise SystemExit('Missing repository variable for '+key)
+          actual=subprocess.check_output(['git','-C',os.environ['PROJECT_ROOT'],'rev-parse','HEAD'],text=True).strip()
+          if actual != os.environ['EXPECTED_LLVM_REVISION']: raise SystemExit('LLVM revision mismatch')
+          subprocess.run(['cmake','--build',os.environ['LLVM_BUILD_DIR'],'--target','clang','lldb','lldb-dap','lldb-mcp','LanguageRuntimeObjCGNUstepTests','LanguageObjCTests'],check=True)
+      - name: Build fixtures and run integration tests
+        shell: python
+        run: |
+          import os, subprocess, sys
+          subprocess.run([sys.executable,'lessons/lab.py','setup'],check=True)
+          subprocess.run([sys.executable,'lessons/run_ci.py','--llvm-revision',os.environ['EXPECTED_LLVM_REVISION']],check=True)
+      - name: Retain evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-validation-${{ matrix.platform }}
+          path: lessons/out/validation/
