@@ -72,7 +72,7 @@ says so (`drafts/rfc-followup-ci.md`). None of these have been sent yet.
   - 2026-11-03, approved by Rob:
     - `gnustep/pr-series` = `8940e879a657` (force);
     - all 27 `upstream-pr/NN-*` branches;
-    - the fork-only `ci/gnustep-fork-validation` (see §6).
+    - the fork-only `ci/gnustep-fork-validation` (see §6; since deleted).
 - Every commit ends with `Assisted-by: Claude Code` per the
   [AI tool policy](https://llvm.org/docs/AIToolPolicy.html). **Never
   `Co-Authored-By:`.** LLVM squash-merges, and **the PR description becomes the
@@ -396,18 +396,20 @@ For every new test, revert only the source fix (`git checkout <before> --
 - **Status: the script is verified locally** (built a fresh prefix; every
   GNUstep test passed against it). **The workflow has never run on GitHub**:
   the owner guard keeps it off forks.
-- **Fork validation (started 2026-11-03).**
-  - Branch `ci/gnustep-fork-validation` on the fork is the series tip plus
-    one "DO NOT UPSTREAM" commit. That commit allows the `robk-dev` owner and
-    adds a push trigger for the branch.
-  - First run (cold cache):
-    <https://github.com/robk-dev/llvm-project/actions/runs/41600865284>.
-  - Still to do:
-    - a second, warm run;
-    - one run with a deliberately broken prefix, to confirm the guard fails
-      the job.
-  - Then delete the branch. The timings and run links go into
-    `drafts/prs/04-*` and the RFC follow-up.
+- **Fork validation (done, 2026-11-03).**
+  - It ran at the series tip, with the owner guard relaxed by a fork-only
+    commit on a scratch branch. The branch has since been deleted; the runs
+    remain.
+  - **Cold cache:** 64 minutes. GNUstep took 30 s, clang and LLDB 62 minutes;
+    18/18 GNUstep tests passed.
+    <https://github.com/robk-dev/llvm-project/actions/runs/41600865284>
+    (attempt 1)
+  - **Warm cache:** 5½ minutes. GNUstep came from the cache and the sccache
+    build took 3 min 20 s; 18/18 passed. Same run, attempt 2.
+  - **Guard check:** `LLDB_TEST_OBJC_GNUSTEP_BASE_DIR` dropped, so the
+    Foundation API tests reported UNSUPPORTED. The job **failed**, as
+    designed: <https://github.com/robk-dev/llvm-project/actions/runs/41609222467>.
+  - The numbers are in `drafts/prs/04-*` and `drafts/rfc-followup-ci.md`.
 
 ---
 
@@ -532,8 +534,7 @@ starting point.
 
 ## 10. Next steps, in order
 
-1. Finish the CI validation on the fork (§6).
-2. Optionally, a Codex round 3 on the round-2 fixes (same prompt; point it at
+1. Optionally, a Codex round 3 on the round-2 fixes (same prompt; point it at
    `drafts/codex-audit-r2-response.md`).
-3. Comms (§7.2), then PRs 2–4, then 5.
-4. Write the PR drafts for 6 onwards as the earlier ones land.
+2. Comms (§7.2), then PRs 2–4, then 5.
+3. Write the PR drafts for 6 onwards as the earlier ones land.
