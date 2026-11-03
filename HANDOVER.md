@@ -67,8 +67,12 @@ says so (`drafts/rfc-followup-ci.md`). None of these have been sent yet.
   The drafts in `drafts/prs/` are starting points. Don't open, comment on, or
   edit any upstream PR or Discourse thread.
 - **Don't push to the fork without Rob saying so.** Pushes so far:
-  `gnustep/pr-series` (old tip `aa155a32fccc`) and tag `windows/round4`, on
-  2026-10-18, for Windows verification.
+  - 2026-10-18: `gnustep/pr-series` (old tip `aa155a32fccc`) and tag
+    `windows/round4`, for Windows verification.
+  - 2026-11-03, approved by Rob:
+    - `gnustep/pr-series` = `8940e879a657` (force);
+    - all 27 `upstream-pr/NN-*` branches;
+    - the fork-only `ci/gnustep-fork-validation` (see §6).
 - Every commit ends with `Assisted-by: Claude Code` per the
   [AI tool policy](https://llvm.org/docs/AIToolPolicy.html). **Never
   `Co-Authored-By:`.** LLVM squash-merges, and **the PR description becomes the
@@ -106,8 +110,8 @@ WSL through interop (`cmd.exe`, `git.exe`); see §5.2.
 **Branches**
 
 - **`gnustep/pr-series`** = `8940e879a657`, the series: 27 commits on
-  `upstream/main` merge-base `dc057e33a1be`. **Local only; the fork has the
-  older `aa155a32fccc`.** Every Codex round-1 and round-2 fix is in.
+  `upstream/main` merge-base `dc057e33a1be`. Pushed to the fork, along with
+  the `upstream-pr/*` branches. Every Codex round-1 and round-2 fix is in.
 - `upstream-pr/NN-<slug>`: one local branch per commit, so PR *N* is the
   prefix ending at commit *N*.
 - `gnustep/integration`: the old 51-commit August history, also on the fork.
@@ -392,11 +396,18 @@ For every new test, revert only the source fix (`git checkout <before> --
 - **Status: the script is verified locally** (built a fresh prefix; every
   GNUstep test passed against it). **The workflow has never run on GitHub**:
   the owner guard keeps it off forks.
-- **Next step (with Rob):** push a scratch branch to the fork with the owner
-  guard relaxed, trigger it with `gh workflow run`, and get it green twice
-  (cold cache, then warm). Record the timings, and check that a deliberately
-  broken prefix fails the job. Then restore the guard. The timings and run
-  links go into `drafts/prs/04-*` and the RFC follow-up.
+- **Fork validation (started 2026-11-03).**
+  - Branch `ci/gnustep-fork-validation` on the fork is the series tip plus
+    one "DO NOT UPSTREAM" commit. That commit allows the `robk-dev` owner and
+    adds a push trigger for the branch.
+  - First run (cold cache):
+    <https://github.com/robk-dev/llvm-project/actions/runs/41600865284>.
+  - Still to do:
+    - a second, warm run;
+    - one run with a deliberately broken prefix, to confirm the guard fails
+      the job.
+  - Then delete the branch. The timings and run links go into
+    `drafts/prs/04-*` and the RFC follow-up.
 
 ---
 
@@ -521,10 +532,8 @@ starting point.
 
 ## 10. Next steps, in order
 
-1. Push `gnustep/pr-series` (force: the fork has `aa155a32fccc`) and the
-   `upstream-pr/*` branches, when Rob says so.
+1. Finish the CI validation on the fork (§6).
 2. Optionally, a Codex round 3 on the round-2 fixes (same prompt; point it at
    `drafts/codex-audit-r2-response.md`).
-3. Validate CI on the fork (§6).
-4. Comms (§7.2), then PRs 2–4, then 5.
-5. Write the PR drafts for 6 onwards as the earlier ones land.
+3. Comms (§7.2), then PRs 2–4, then 5.
+4. Write the PR drafts for 6 onwards as the earlier ones land.
