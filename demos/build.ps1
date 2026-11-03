@@ -22,7 +22,10 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $CodeRoot = Split-Path -Parent $RepoRoot
 if (-not $Clang)  { $Clang  = Join-Path $CodeRoot 'llvm-project\build\bin\clang.exe' }
 if (-not $Prefix) { $Prefix = Join-Path $CodeRoot 'gnustep-prefix' }
-if (-not $OutDir) { $OutDir = Join-Path $PSScriptRoot 'out' }
+# A directory of its own: the demo's objc.dll is copied next to it, and in a
+# directory shared with the Foundation demos that copy would be loaded in
+# preference to the libobjc2 their gnustep-base was built against.
+if (-not $OutDir) { $OutDir = Join-Path $PSScriptRoot 'out\runtime' }
 
 if (-not (Test-Path $Clang)) {
     throw "clang not found at '$Clang' - build llvm-project first or pass -Clang"

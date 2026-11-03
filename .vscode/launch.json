@@ -54,7 +54,7 @@
             "stopOnEntry": false,
             "preLaunchTask": "build runtime demo",
             "windows": {
-                "program": "${workspaceFolder}/demos/out/runtime_demo.exe",
+                "program": "${workspaceFolder}/demos/out/runtime/runtime_demo.exe",
                 "debugAdapterExecutable": "${workspaceFolder}/../llvm-project/build/bin/lldb-dap.exe",
                 "env": {
                     "PATH": "${workspaceFolder}/../gnustep-prefix/lib;${env:PATH}"
